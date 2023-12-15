@@ -1,0 +1,116 @@
+Призначення
+Відокремити абстракцію від її реалізації таким чином, щоб перше та друге можна було змінювати незалежно одне від одного.
+
+Терміни абстракція та реалізацію не мають нічого спільного з абстрактним класом чи інтерфейсом мови програмування. Абстракція — це уявний рівень керування чим-небудь, що не виконує роботу самостійно, а делегує її рівню реалізації.
+
+Мотивація
+Якщо для деякої абстракції можливо кілька реалізацій, зазвичай застосовують наслідування. Абстрактний клас визначає інтерфейс абстракції, а його конкретні підкласи по-різному реалізують його. Але такий підхід не завжди є достатньо гнучким. Наслідування жорстко прив'язує реалізацію до абстракції, що перешкоджає незалежній модифікації, розширенню та повторному використанню абстракції та її реалізації.
+
+Застосовність
+Слід використовувати шаблон Міст у випадках, коли:
+
+треба запобігти постійній прив'язці абстракції до реалізації. Так, наприклад, буває коли реалізацію необхідно обрати під час виконання програми;
+як абстракції, так і реалізації повинні розширюватись новими підкласами. У цьому разі шаблон Міст дозволяє комбінувати різні абстракції та реалізації та змінювати їх незалежно одне від одного;
+зміни у реалізації не повинні впливати на клієнтів, тобто клієнтський код не повинен перекомпілюватись;
+треба повністю сховати від клієнтів реалізацію абстракції;
+треба розподілити одну реалізацію поміж кількох об'єктів (можливо застосовуючи підрахунок посилань), і при цьому приховати це від клієнта.
+
+Переваги та недоліки
+Переваги
+Від'єднання абстракції від реалізації
+Зменшення кількості підкласів
+Чистий код і зменшенням розміру виконуваного файлу
+Інтерфейс і реалізація можуть варіюватися самостійно
+Покращена розширюваність - абстракції та впровадження можуть бути розширені самостійно
+Недоліки
+Підвищує складність.
+Подвійна спрямованість - це матиме невеликий вплив на продуктивність.
+#include <iostream>
+
+using namespace std;
+
+// ієрархія реалізації
+struct IWallCreator
+{
+	virtual void BuildWall() = 0;
+	virtual void BuildWallWithDoor() = 0;
+	virtual void BuildWallWithWindow() = 0;
+};
+// конкретні реалізації
+struct BrickWallCreator :public IWallCreator
+{
+	virtual void BuildWall(){ cout << "Brick & mortar wall.\n"; }
+	virtual void BuildWallWithDoor(){ cout << "Brick & mortar wall with door hole.\n"; }
+	virtual void BuildWallWithWindow(){ cout << "Brick & mortar wall with window hole.\n";}
+};
+struct FoamblockWallCreator :public IWallCreator
+{
+	virtual void BuildWall() { cout << "Foam wall.\n"; }
+	virtual void BuildWallWithDoor() { cout << "Foam wall.\n"; }
+	virtual void BuildWallWithWindow() { cout << "Foam wall.\n"; }
+};
+// базовий клас абстракції
+class IBuildCompany
+{
+protected:
+	IWallCreator* wallCreator; // міст
+public:
+	void setWallCreator(IWallCreator* creator)
+	{
+		wallCreator = creator;
+	}
+	virtual void BuildFoundation() = 0;
+	virtual void BuildRoom() = 0;
+	virtual void BuildRoof() = 0;
+};
+// конкретні абстракції
+struct TownBuildCompany :public IBuildCompany
+{
+	virtual void BuildFoundation(){	cout << "Concrete solid foundation is finished.\n"; }
+	// визначення методів абстракції через методи реалізацї
+	virtual void BuildRoom()
+	{
+		wallCreator->BuildWallWithWindow();
+		wallCreator->BuildWall();
+		wallCreator->BuildWall();
+		wallCreator->BuildWallWithDoor();
+		cout << "Room is finished.\n";
+	}
+	virtual void BuildRoof() { cout << "Flat roof is finished.\n";}
+};
+struct CoountryBuildCompany :public IBuildCompany
+{
+	virtual void BuildFoundation() { cout << "Country foundation is finished.\n"; }
+	virtual void BuildRoom()
+	{
+		wallCreator->BuildWallWithDoor();
+		wallCreator->BuildWallWithWindow();
+		wallCreator->BuildWallWithWindow();
+		wallCreator->BuildWall();
+		cout << "Room is finished.\n";
+	}
+	virtual void BuildRoof() { cout << "Roof is finished.\n"; }
+};
+void main()
+{
+	BrickWallCreator brigade;
+	FoamblockWallCreator team;
+	TownBuildCompany Avalon;
+	CoountryBuildCompany Riel;
+
+	cout << "*Avalon* has started the building!\n\n";
+	Avalon.BuildFoundation();
+	Avalon.setWallCreator(&team);
+	Avalon.BuildRoom();
+	Avalon.BuildRoom();
+	cout << " the creator of walls was changed\n";
+	Avalon.setWallCreator(&brigade);
+	Avalon.BuildRoom();
+	Avalon.BuildRoof();
+	cout << "\n*Riel* has started the building!\n\n";
+	Riel.BuildFoundation();
+	Riel.setWallCreator(&brigade);
+	Riel.BuildRoom();
+	Riel.BuildRoom();
+	Riel.BuildRoof();
+}
